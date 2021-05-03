@@ -1,6 +1,6 @@
 # meetup
 
-A new Flutter project.
+A webRTC based peer to peer video conferencing web application.
 
 ## Getting Started
 
