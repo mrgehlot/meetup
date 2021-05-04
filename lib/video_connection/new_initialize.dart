@@ -69,7 +69,7 @@ class InitializeWebRTC {
   void onConnected() {
     print('EXAMPLE::Mosquitto client connected....');
     this.client.subscribe("create_room/$roomCode", MqttQos.atLeastOnce);
-    this.client.subscribe("answer/$roomCode", MqttQos.atLeastOnce);
+    // this.client.subscribe("answer/$roomCode", MqttQos.atLeastOnce);
     this.client.updates.listen((List<MqttReceivedMessage<MqttMessage>> c) {
       final MqttPublishMessage recMess = c[0].payload;
       final String pt =
@@ -99,11 +99,12 @@ class InitializeWebRTC {
   }
 
   void onSubscribed(String topic) {
-    // print('EXAMPLE::Subscription confirmed for topic $topic');
+    print('EXAMPLE::Subscription confirmed for topic $topic');
   }
 
   void onDisconnected() {
     print('EXAMPLE::OnDisconnected client callback - Client disconnection');
+    print(client.connectionStatus.returnCode);
     if (client.connectionStatus.disconnectionOrigin ==
         MqttDisconnectionOrigin.solicited) {
       print('EXAMPLE::OnDisconnected callback is solicited, this is correct');
@@ -158,7 +159,7 @@ class InitializeWebRTC {
     pc.onSignalingState = (RTCSignalingState event) {
       if (event == RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
         print("----------- local offer has been set -------------");
-        // this.client.subscribe("answer/$roomCode", MqttQos.atLeastOnce);
+        this.client.subscribe("answer/$roomCode", MqttQos.atLeastOnce);
       } else if (event == RTCSignalingState.RTCSignalingStateHaveRemoteOffer) {
         print("----------- remote offer has been set -------------");
         createAnswer();
@@ -258,6 +259,7 @@ class InitializeWebRTC {
   }
 
   void closeAllConnection() {
+    this.client.disconnect();
     _peerConnection.close();
     _localStream.getTracks().forEach((element) {
       element.stop();
