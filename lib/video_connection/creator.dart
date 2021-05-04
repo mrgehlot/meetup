@@ -118,10 +118,10 @@ class InitializeCreatorWebRTC {
     Map<String, dynamic> configuration = {
       "iceServers": [
         {"url": "stun:stun.l.google.com:19302"},
-        // {"url": "stun:stun1.l.google.com:19302"},
-        // {"url": "stun:stun2.l.google.com:19302"},
-        // {"url": "stun:stun3.l.google.com:19302"},
-        // {"url": "stun:stun4.l.google.com:19302"},
+        {"url": "stun:stun1.l.google.com:19302"},
+        {"url": "stun:stun2.l.google.com:19302"},
+        {"url": "stun:stun3.l.google.com:19302"},
+        {"url": "stun:stun4.l.google.com:19302"},
       ]
     };
 
@@ -149,7 +149,8 @@ class InitializeCreatorWebRTC {
       }
     };
     pc.onIceConnectionState = (RTCIceConnectionState event) {
-      if (event == RTCIceConnectionState.RTCIceConnectionStateCompleted) {}
+      print("onIceConnectionState --> $event");
+      // if (event == RTCIceConnectionState.RTCIceConnectionStateCompleted) {}
     };
 
     pc.onSignalingState = (RTCSignalingState event) {
@@ -165,7 +166,6 @@ class InitializeCreatorWebRTC {
     };
 
     pc.onAddStream = (stream) {
-      print("addStream: " + stream.id);
       _remoteRenderer.srcObject = stream;
     };
 
