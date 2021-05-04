@@ -24,7 +24,6 @@ class _MeetingRoomState extends State<MeetingRoom> {
   bool audioOn = true;
   bool remoteConnected = false;
   bool localConnected = false;
-  bool codeGenerated = false;
   double otherMembersWidth = 300;
   double bottomBarHeight = 100;
   String roomCode;
@@ -53,12 +52,12 @@ class _MeetingRoomState extends State<MeetingRoom> {
         initializeWebRTC.initRenderers();
       }
     });
-    super.initState();
     if (isProducer) {
       setState(() {
         roomCode = tempRoomCode;
       });
     }
+    super.initState();
   }
 
   @override
@@ -88,7 +87,7 @@ class _MeetingRoomState extends State<MeetingRoom> {
                   color: Colors.black,
                   width: otherMembersWidth,
                   height: MediaQuery.of(context).size.height - bottomBarHeight,
-                  child: codeGenerated
+                  child: roomCode != null
                       ? Center(
                           child: SelectableText(
                             "share this code with your members $roomCode",

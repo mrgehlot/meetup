@@ -117,11 +117,16 @@ class InitializeCreatorWebRTC {
   _createPeerConnection() async {
     Map<String, dynamic> configuration = {
       "iceServers": [
-        {"url": "stun:stun.l.google.com:19302"},
-        {"url": "stun:stun1.l.google.com:19302"},
-        {"url": "stun:stun2.l.google.com:19302"},
-        {"url": "stun:stun3.l.google.com:19302"},
-        {"url": "stun:stun4.l.google.com:19302"},
+        {"urls": "stun:stun.l.google.com:19302"},
+        {
+          "urls": 'turn:numb.viagenie.ca',
+          "credential": 'muazkh',
+          "username": 'webrtc@live.com'
+        }
+        // {"url": "stun:stun1.l.google.com:19302"},
+        // {"url": "stun:stun2.l.google.com:19302"},
+        // {"url": "stun:stun3.l.google.com:19302"},
+        // {"url": "stun:stun4.l.google.com:19302"},
       ]
     };
 
@@ -188,8 +193,8 @@ class InitializeCreatorWebRTC {
       //   }
       // });
     });
-    dynamic lastCandidate = new RTCIceCandidate("","",0);
-      _peerConnection.addCandidate(lastCandidate);
+    dynamic lastCandidate = new RTCIceCandidate("", "", 0);
+    _peerConnection.addCandidate(lastCandidate);
   }
 
   createOffer() async {
@@ -239,6 +244,9 @@ class InitializeCreatorWebRTC {
   void turnOnCamera() async {
     _localStream = await getUserMedia();
     _peerConnection.addStream(_localStream);
+    // _localStream.getTracks().forEach((track) {
+    //   _peerConnection.addTrack(track,_localStream);
+    // });
   }
 
   void turnOffCamera() {
