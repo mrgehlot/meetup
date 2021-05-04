@@ -175,7 +175,7 @@ class InitializeMemberWebRTC {
       }
     };
     pc.onIceConnectionState = (RTCIceConnectionState event) {
-      if (event == RTCIceConnectionState.RTCIceConnectionStateCompleted) {}
+      print("onIceConnectionState --> $event");
     };
 
     pc.onSignalingState = (RTCSignalingState event) {
@@ -189,8 +189,10 @@ class InitializeMemberWebRTC {
     };
 
     pc.onAddTrack = (MediaStream stream, MediaStreamTrack track) {
-      _remoteRenderer.srcObject = stream;
+      track.onUnMute = (){
+        _remoteRenderer.srcObject = stream;
       _remoteRenderer.srcObject.addTrack(track);
+      };
     };
 
     return pc;
