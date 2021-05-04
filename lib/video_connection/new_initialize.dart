@@ -29,29 +29,27 @@ class InitializeWebRTC {
   }
 
   Future<bool> initializeMQTTClient() async {
-    print("$mqttClientIdentifer, $username, $passcode");
     this.client = new MqttBrowserClient(
-        'ws://hairdresser.cloudmqtt.com', this.mqttClientIdentifer);
-    this.client.logging(on: true);
-    this.client.port = 16642;
+        "wss://hairdresser.cloudmqtt.com", this.mqttClientIdentifer);
+    this.client.logging(on: false);
+    this.client.port = 36642;
     this.client.keepAlivePeriod = 1600;
     this.client.onDisconnected = onDisconnected;
     this.client.onConnected = onConnected;
     this.client.onSubscribed = onSubscribed;
-    this.client.autoReconnect = true;
+    // this.client.autoReconnect = true;
+    // this.client..websocketProtocols = ["websockets"];
     final connMess = MqttConnectMessage()
         .keepAliveFor(1600)
-        .startClean() // Non persistent session for testing
-        .withWillQos(MqttQos.atLeastOnce)
-        .withWillTopic('willtopic')
-        .withWillMessage('My Will message');
-        // .withClientIdentifier(this.mqttClientIdentifer)
-        // .authenticateAs(this.username, this.passcode);
+        // .startClean() // Non persistent session for testing
+        .withWillQos(MqttQos.atLeastOnce);
+    // .withClientIdentifier(this.mqttClientIdentifer)
+    // .authenticateAs(this.username, this.passcode);
     print('EXAMPLE::Mosquitto client connecting....');
     client.connectionMessage = connMess;
 
     try {
-      await client.connect(this.username,this.passcode);
+      await client.connect(this.username, this.passcode);
     } on Exception catch (e) {
       print('EXAMPLE::client exception - $e');
       client.disconnect();
@@ -72,22 +70,28 @@ class InitializeWebRTC {
     print('EXAMPLE::Mosquitto client connected....');
     this.client.subscribe("create_room/$roomCode", MqttQos.atLeastOnce);
     this.client.subscribe("answer/$roomCode", MqttQos.atLeastOnce);
-    this.client.subscribe("send_to_creator/$roomCode", MqttQos.atLeastOnce);
-    this.client.subscribe("send_to_member/$roomCode", MqttQos.atLeastOnce);
     this.client.updates.listen((List<MqttReceivedMessage<MqttMessage>> c) {
       final MqttPublishMessage recMess = c[0].payload;
       final String pt =
           MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
-      print(
-          'EXAMPLE::Change notification:: topic is ${c[0].topic}, payload is <-- $pt -->');
-      if (c[0].topic.toString() == "create_room/$roomCode") {
+      if (c[0].topic.toString() == "create_room/$roomCode" && !this.offerFlag) {
+        print(
+            'EXAMPLE::Change notification:: topic is ${c[0].topic}, payload is <-- $pt -->');
         setRemoteDescription(pt, true);
-      } else if (c[0].topic.toString() == "answer/$roomCode") {
+      } else if (c[0].topic.toString() == "answer/$roomCode" && this.offerFlag) {
+        print(
+            'EXAMPLE::Change notification:: topic is ${c[0].topic}, payload is <-- $pt -->');
         setRemoteDescription(pt, false);
-      } else if (c[0].topic.toString() == "send_to_creator/$roomCode") {
-        addCandidates(pt);
-      } else if (c[0].topic.toString() == "send_to_member/$roomCode") {
-        addCandidates(pt);
+      } else if (c[0].topic.toString() == "send_to_creator/$roomCode" &&
+          this.offerFlag) {
+        print(
+            'EXAMPLE::Change notification:: topic is ${c[0].topic}, payload is <-- $pt -->');
+        addCandidates(pt, false);
+      } else if (c[0].topic.toString() == "send_to_member/$roomCode" &&
+          !this.offerFlag) {
+        print(
+            'EXAMPLE::Change notification:: topic is ${c[0].topic}, payload is <-- $pt -->');
+        addCandidates(pt, true);
       }
     });
     print(
@@ -95,7 +99,7 @@ class InitializeWebRTC {
   }
 
   void onSubscribed(String topic) {
-    print('EXAMPLE::Subscription confirmed for topic $topic');
+    // print('EXAMPLE::Subscription confirmed for topic $topic');
   }
 
   void onDisconnected() {
@@ -147,27 +151,26 @@ class InitializeWebRTC {
         );
       }
     };
-    pc.onIceConnectionState = (event) {
-      print("on Ice Connection state -----> $event");
+    pc.onIceConnectionState = (RTCIceConnectionState event) {
+      if (event == RTCIceConnectionState.RTCIceConnectionStateCompleted) {}
     };
 
     pc.onSignalingState = (RTCSignalingState event) {
-      print("on signaling state ---> $event");
       if (event == RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
         print("----------- local offer has been set -------------");
-        print(this.roomCode);
+        // this.client.subscribe("answer/$roomCode", MqttQos.atLeastOnce);
       } else if (event == RTCSignalingState.RTCSignalingStateHaveRemoteOffer) {
         print("----------- remote offer has been set -------------");
         createAnswer();
       } else if (event ==
           RTCSignalingState.RTCSignalingStateHaveLocalPrAnswer) {
         print("----------- local answer has been set -------------");
-        String allAnswerCandidates = encrypt(json.encode(this.candidates));
-        publish("send_to_creator/$roomCode", allAnswerCandidates);
+        this.client.subscribe("send_to_member/$roomCode", MqttQos.atLeastOnce);
       } else if (event ==
           RTCSignalingState.RTCSignalingStateHaveRemotePrAnswer) {
         print("----------- remote answer has been set -------------");
         String allOfferCandidates = encrypt(json.encode(this.candidates));
+        this.client.subscribe("send_to_creator/$roomCode", MqttQos.atLeastOnce);
         publish("send_to_member/$roomCode", allOfferCandidates);
       }
     };
@@ -180,7 +183,7 @@ class InitializeWebRTC {
     return pc;
   }
 
-  addCandidates(String message) {
+  addCandidates(String message, bool byProducer) {
     var decryptedCandidate = decrypt(message);
     var allCandidates = json.decode(decryptedCandidate);
     allCandidates.forEach((sessionCandidate) async {
@@ -188,7 +191,12 @@ class InitializeWebRTC {
       print(session['candidate']);
       dynamic candidate = new RTCIceCandidate(
           session['candidate'], session['sdpMid'], session['sdpMlineIndex']);
-      await _peerConnection.addCandidate(candidate);
+      await _peerConnection.addCandidate(candidate).then((value) {
+        if (byProducer) {
+          String allAnswerCandidates = encrypt(json.encode(this.candidates));
+          publish("send_to_creator/$roomCode", allAnswerCandidates);
+        }
+      });
     });
   }
 
