@@ -28,9 +28,14 @@ class InitializeWebRTC {
     await _remoteRenderer.initialize();
   }
 
+  String generateRandomClientID(){
+    DateTime now = new DateTime.now();
+    return "public_cloud" + now.toString();
+  }
+
   Future<bool> initializeMQTTClient() async {
     this.client = new MqttBrowserClient(
-        "wss://hairdresser.cloudmqtt.com", this.mqttClientIdentifer);
+        "wss://hairdresser.cloudmqtt.com", generateRandomClientID());
     this.client.logging(on: false);
     this.client.port = 36642;
     this.client.keepAlivePeriod = 1600;
