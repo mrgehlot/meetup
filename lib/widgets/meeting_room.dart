@@ -87,27 +87,18 @@ class _MeetingRoomState extends State<MeetingRoom> {
                   color: Colors.black,
                   width: otherMembersWidth,
                   height: MediaQuery.of(context).size.height - bottomBarHeight,
-                  child: roomCode != null
-                      ? Center(
-                          child: SelectableText(
-                            "share this code with your members $roomCode",
-                            style: TextStyle(
-                              color: Colors.white,
-                            ),
-                          ),
-                        )
-                      : Scrollbar(
-                          child: ListView(
-                            scrollDirection: Axis.vertical,
-                            children: [
-                              Container(
-                                color: Colors.pink,
-                                height: 200,
-                                child: RTCVideoView(_remoteRenderer),
-                              ),
-                            ],
-                          ),
+                  child: Scrollbar(
+                    child: ListView(
+                      scrollDirection: Axis.vertical,
+                      children: [
+                        Container(
+                          color: Colors.pink,
+                          height: 200,
+                          child: RTCVideoView(_remoteRenderer),
                         ),
+                      ],
+                    ),
+                  ),
                 )
               ],
             ),
@@ -116,7 +107,14 @@ class _MeetingRoomState extends State<MeetingRoom> {
               width: MediaQuery.of(context).size.width,
               color: Colors.white,
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  SelectableText(
+                    "share this code with your members $roomCode",
+                    style: TextStyle(
+                      color: Colors.black,
+                    ),
+                  ),
                   Spacer(
                     flex: 1,
                   ),
