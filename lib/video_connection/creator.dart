@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'dart:convert';
 import 'package:sdp_transform/sdp_transform.dart';
@@ -153,10 +155,12 @@ class InitializeCreatorWebRTC {
     pc.onSignalingState = (RTCSignalingState event) {
       if (event == RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
         print("----------- local offer has been set -------------");
-      } else if (event == RTCSignalingState.RTCSignalingStateHaveRemotePrAnswer) {
+      } else if (event ==
+          RTCSignalingState.RTCSignalingStateHaveRemotePrAnswer) {
+        debugger();
         print("----------- remote answer has been set -------------");
-        String allOfferCandidates = encrypt(json.encode(this.candidates));
-        publish("send_to_member/$roomCode", allOfferCandidates);
+        // String allOfferCandidates = encrypt(json.encode(this.candidates));
+        // publish("send_to_member/$roomCode", allOfferCandidates);
       }
     };
 
@@ -171,12 +175,12 @@ class InitializeCreatorWebRTC {
   addCandidates(String message) {
     var decryptedCandidate = decrypt(message);
     var allCandidates = json.decode(decryptedCandidate);
-    allCandidates.forEach((sessionCandidate) async {
-      dynamic session = await jsonDecode(sessionCandidate);
+    allCandidates.forEach((sessionCandidate) {
+      dynamic session = jsonDecode(sessionCandidate);
       print(session['candidate']);
       dynamic candidate = new RTCIceCandidate(
           session['candidate'], session['sdpMid'], session['sdpMlineIndex']);
-      await _peerConnection.addCandidate(candidate);
+      _peerConnection.addCandidate(candidate);
       // .then((value) {
       //   if (byProducer) {
       //     String allAnswerCandidates = encrypt(json.encode(this.candidates));
@@ -184,6 +188,8 @@ class InitializeCreatorWebRTC {
       //   }
       // });
     });
+    dynamic lastCandidate = new RTCIceCandidate("","",0);
+      _peerConnection.addCandidate(lastCandidate);
   }
 
   createOffer() async {
@@ -216,7 +222,10 @@ class InitializeCreatorWebRTC {
     String sdp = write(session, null);
     RTCSessionDescription description =
         new RTCSessionDescription(sdp, 'answer');
-    _peerConnection.setRemoteDescription(description);
+    _peerConnection.setRemoteDescription(description).then((value) {
+      String allOfferCandidates = encrypt(json.encode(this.candidates));
+      publish("send_to_member/$roomCode", allOfferCandidates);
+    });
   }
 
   initialConnection(bool isProducer) async {

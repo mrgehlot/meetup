@@ -154,7 +154,8 @@ class InitializeMemberWebRTC {
       if (event == RTCSignalingState.RTCSignalingStateHaveRemoteOffer) {
         print("----------- remote offer has been set -------------");
         createAnswer();
-      } else if (event == RTCSignalingState.RTCSignalingStateHaveLocalPrAnswer) {
+      } else if (event ==
+          RTCSignalingState.RTCSignalingStateHaveLocalPrAnswer) {
         print("----------- local answer has been set -------------");
       }
     };
@@ -170,13 +171,15 @@ class InitializeMemberWebRTC {
   addCandidates(String message) {
     var decryptedCandidate = decrypt(message);
     var allCandidates = json.decode(decryptedCandidate);
-    allCandidates.forEach((sessionCandidate) async {
-      dynamic session = await jsonDecode(sessionCandidate);
+    allCandidates.forEach((sessionCandidate) {
+      dynamic session = jsonDecode(sessionCandidate);
       print(session['candidate']);
       dynamic candidate = new RTCIceCandidate(
           session['candidate'], session['sdpMid'], session['sdpMlineIndex']);
-      await _peerConnection.addCandidate(candidate);
+      _peerConnection.addCandidate(candidate);
     });
+    dynamic lastCandidate = new RTCIceCandidate("", "", 0);
+    _peerConnection.addCandidate(lastCandidate);
     String allAnswerCandidates = encrypt(json.encode(this.candidates));
     publish("send_to_creator/$roomCode", allAnswerCandidates);
   }
