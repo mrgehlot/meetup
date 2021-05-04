@@ -2,7 +2,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:meetup/video_connection/new_initialize.dart';
+import 'package:meetup/video_connection/creator.dart';
+import 'package:meetup/video_connection/members.dart';
 import '../main.dart';
 
 class MeetingRoom extends StatefulWidget {
@@ -27,8 +28,7 @@ class _MeetingRoomState extends State<MeetingRoom> {
   double otherMembersWidth = 300;
   double bottomBarHeight = 100;
   String roomCode;
-  InitializeWebRTC initializeWebRTC;
-  String serverHost = "localhost";
+  dynamic initializeWebRTC;
 
   String characters = 'ABCDEFGHIJKLMNOPQRSTUVWXZ';
   Random _rnd = Random();
@@ -42,8 +42,11 @@ class _MeetingRoomState extends State<MeetingRoom> {
   void initState() {
     bool isProducer = widget.remoteRoomCode == null;
     var tempRoomCode = isProducer ? getRandomString(5) : widget.remoteRoomCode;
-    initializeWebRTC = new InitializeWebRTC(
-        _localRenderer, _remoteRenderer, tempRoomCode, isProducer);
+    initializeWebRTC = isProducer
+        ? new InitializeCreatorWebRTC(
+            _localRenderer, _remoteRenderer, tempRoomCode)
+        : new InitializeMemberWebRTC(
+            _localRenderer, _remoteRenderer, tempRoomCode);
     initializeWebRTC.initializeMQTTClient().then((value) {
       if (value) {
         initializeWebRTC.initialConnection(isProducer);
@@ -53,7 +56,7 @@ class _MeetingRoomState extends State<MeetingRoom> {
     super.initState();
     if (isProducer) {
       setState(() {
-        this.roomCode = tempRoomCode;
+        roomCode = tempRoomCode;
       });
     }
   }
