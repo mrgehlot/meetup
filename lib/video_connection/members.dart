@@ -7,7 +7,6 @@ import 'package:mqtt_client/mqtt_browser_client.dart';
 
 class InitializeMemberWebRTC {
   RTCPeerConnection _peerConnection;
-  MediaStream _localStream;
   final RTCVideoRenderer _localRenderer;
   final RTCVideoRenderer _remoteRenderer;
   final String roomCode;
@@ -165,9 +164,9 @@ class InitializeMemberWebRTC {
       }
     };
 
-    pc.onAddStream = (stream) {
-      print("addStream: " + stream.id);
+    pc.onAddTrack = (MediaStream stream, MediaStreamTrack track) {
       _remoteRenderer.srcObject = stream;
+      _remoteRenderer.srcObject.addTrack(track);
     };
 
     return pc;
@@ -229,45 +228,42 @@ class InitializeMemberWebRTC {
   }
 
   void turnOnCamera() async {
-    _localStream = await getUserMedia();
-    _localStream.getTracks().forEach((track) {
-      _peerConnection.addTrack(track, _localStream);
+    _localRenderer.srcObject = await getUserMedia();
+    _localRenderer.srcObject.getTracks().forEach((track) {
+      _peerConnection.addTrack(track, _localRenderer.srcObject);
     });
-    _peerConnection.addStream(_localStream);
   }
 
   void turnOffCamera() {
-    _localStream.getVideoTracks().forEach((element) {
+    _localRenderer.srcObject.getVideoTracks().forEach((element) {
       element.stop();
     });
   }
 
   void toggleMic(bool value) {
-    if (_localStream != null) {
-      _localStream.getAudioTracks()[0].enabled = value ? true : false;
+    if (_localRenderer.srcObject != null) {
+      _localRenderer.srcObject.getAudioTracks()[0].enabled =
+          value ? true : false;
     }
   }
 
   void closeAllConnection() {
     this.client.disconnect();
     _peerConnection.close();
-    _localStream.getTracks().forEach((element) {
+    _localRenderer.srcObject.getTracks().forEach((element) {
       element.stop();
     });
   }
 
-  getUserMedia() async {
+  Future<MediaStream> getUserMedia() async {
     final Map<String, dynamic> mediaConstraints = {
       'audio': true,
       'video': {
         'facingMode': 'user',
       }
     };
-
     MediaStream stream =
         await navigator.mediaDevices.getUserMedia(mediaConstraints);
-    _localRenderer.srcObject = stream;
-    // _localRenderer.mirror = true;
     return stream;
   }
 
