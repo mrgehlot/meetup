@@ -153,14 +153,7 @@ class InitializeCreatorWebRTC {
     pc.onSignalingState = (RTCSignalingState event) {
       if (event == RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
         print("----------- local offer has been set -------------");
-      } else if (event == RTCSignalingState.RTCSignalingStateHaveRemoteOffer) {
-        print("----------- remote offer has been set -------------");
-        createAnswer();
-      } else if (event ==
-          RTCSignalingState.RTCSignalingStateHaveLocalPrAnswer) {
-        print("----------- local answer has been set -------------");
-      } else if (event ==
-          RTCSignalingState.RTCSignalingStateHaveRemotePrAnswer) {
+      } else if (event == RTCSignalingState.RTCSignalingStateHaveRemotePrAnswer) {
         print("----------- remote answer has been set -------------");
         String allOfferCandidates = encrypt(json.encode(this.candidates));
         publish("send_to_member/$roomCode", allOfferCandidates);
@@ -194,6 +187,7 @@ class InitializeCreatorWebRTC {
   }
 
   createOffer() async {
+    if (candidates.length > 0) candidates.clear();
     print("--------creating offer ----------");
     RTCSessionDescription description = await _peerConnection.createOffer(
       {'offerToReceiveVideo': 1, 'offerToReceiveAudio': 1},

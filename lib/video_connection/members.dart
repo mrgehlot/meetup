@@ -151,18 +151,11 @@ class InitializeMemberWebRTC {
     };
 
     pc.onSignalingState = (RTCSignalingState event) {
-      if (event == RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
-        print("----------- local offer has been set -------------");
-        this.client.subscribe("answer/$roomCode", MqttQos.atLeastOnce);
-      } else if (event == RTCSignalingState.RTCSignalingStateHaveRemoteOffer) {
+      if (event == RTCSignalingState.RTCSignalingStateHaveRemoteOffer) {
         print("----------- remote offer has been set -------------");
         createAnswer();
-      } else if (event ==
-          RTCSignalingState.RTCSignalingStateHaveLocalPrAnswer) {
+      } else if (event == RTCSignalingState.RTCSignalingStateHaveLocalPrAnswer) {
         print("----------- local answer has been set -------------");
-      } else if (event ==
-          RTCSignalingState.RTCSignalingStateHaveRemotePrAnswer) {
-        print("----------- remote answer has been set -------------");
       }
     };
 
