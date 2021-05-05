@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'dart:convert';
 import 'package:sdp_transform/sdp_transform.dart';
@@ -16,6 +14,7 @@ class InitializeCreatorWebRTC {
   String singleCandidate;
   String rtcString;
   String sdpString;
+  MediaStream localStream;
   MqttBrowserClient client;
   String username = "ngtyutmq";
   String passcode = "LuwKDV6Raabe";
@@ -160,6 +159,9 @@ class InitializeCreatorWebRTC {
       },
       "optional": [],
     };
+
+    localStream = await getUserMedia();
+
     RTCPeerConnection pc =
         await createPeerConnection(configuration, offerSdpConstraints);
     pc.onIceCandidate = (event) {
@@ -178,7 +180,6 @@ class InitializeCreatorWebRTC {
     };
     pc.onIceConnectionState = (RTCIceConnectionState event) {
       print("onIceConnectionState --> $event");
-      // if (event == RTCIceConnectionState.RTCIceConnectionStateCompleted) {}
     };
 
     pc.onSignalingState = (RTCSignalingState event) {
@@ -187,8 +188,6 @@ class InitializeCreatorWebRTC {
       } else if (event ==
           RTCSignalingState.RTCSignalingStateHaveRemotePrAnswer) {
         print("----------- remote answer has been set -------------");
-        // String allOfferCandidates = encrypt(json.encode(this.candidates));
-        // publish("send_to_member/$roomCode", allOfferCandidates);
       }
     };
 
@@ -204,9 +203,10 @@ class InitializeCreatorWebRTC {
     };
 
     pc.onTrack = (RTCTrackEvent event) {
-      // event.streams.f
       print("track is there ----------");
     };
+
+    pc.addStream(localStream);
 
     return pc;
   }
@@ -261,10 +261,7 @@ class InitializeCreatorWebRTC {
   }
 
   void turnOnCamera() async {
-    _localRenderer.srcObject = await getUserMedia();
-    _localRenderer.srcObject.getTracks().forEach((track) {
-      _peerConnection.addTrack(track, _localRenderer.srcObject);
-    });
+    _localRenderer.srcObject = localStream;
   }
 
   void turnOffCamera() {

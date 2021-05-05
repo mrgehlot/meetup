@@ -14,6 +14,7 @@ class InitializeMemberWebRTC {
   String singleCandidate;
   String rtcString;
   String sdpString;
+  MediaStream localStream;
   MqttBrowserClient client;
   String username = "ngtyutmq";
   String passcode = "LuwKDV6Raabe";
@@ -158,6 +159,8 @@ class InitializeMemberWebRTC {
       },
       "optional": [],
     };
+
+    localStream = await getUserMedia();
     RTCPeerConnection pc =
         await createPeerConnection(configuration, offerSdpConstraints);
     pc.onIceCandidate = (event) {
@@ -203,6 +206,7 @@ class InitializeMemberWebRTC {
       print("track is there ----------");
     };
 
+    pc.addStream(localStream);
     return pc;
   }
 
@@ -263,10 +267,7 @@ class InitializeMemberWebRTC {
   }
 
   void turnOnCamera() async {
-    _localRenderer.srcObject = await getUserMedia();
-    _localRenderer.srcObject.getTracks().forEach((track) {
-      _peerConnection.addTrack(track, _localRenderer.srcObject);
-    });
+    _localRenderer.srcObject = localStream;
   }
 
   void turnOffCamera() {

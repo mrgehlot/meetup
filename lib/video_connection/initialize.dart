@@ -1,254 +1,236 @@
-import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'dart:convert';
-import 'package:sdp_transform/sdp_transform.dart';
-import 'package:archive/archive.dart';
-import 'package:web_socket_channel/html.dart';
+// import 'dart:convert';
 
-class InitializeWebRTC {
-  RTCPeerConnection _peerConnection;
-  MediaStream _localStream;
-  final RTCVideoRenderer _localRenderer;
-  final RTCVideoRenderer _remoteRenderer;
-  final String roomCode;
-  final bool offerFlag;
-  List<String> candidates = [];
-  String singleCandidate;
-  String rtcString;
-  String sdpString;
-  String serverHost = "localhost";
-  InitializeWebRTC(
-      this._localRenderer, this._remoteRenderer, this.roomCode, this.offerFlag);
+// import 'package:flutter/material.dart';
+// // import 'package:flutter_webrtc/web/rtc_session_description.dart';
+// import 'package:flutter_webrtc/flutter_webrtc.dart';
+// import 'package:sdp_transform/sdp_transform.dart';
 
-  initRenderers() async {
-    await _localRenderer.initialize();
-    await _remoteRenderer.initialize();
-  }
 
-  signalingListeners(bool isOffer) async {
-    if (isOffer) {
-      print("into signaling when creating offer");
-      print(this.roomCode);
-      //When creating createOffer()
-      // var answerChannel = HtmlWebSocketChannel.connect(
-      //     Uri.parse('ws://$serverHost:8765/answer/' + this.roomCode));
-      // answerChannel.stream.listen((message) {
-      //   print("Oh just got the answer!!");
-      //   setRemoteDescription(message.toString(), false);
-      // });
-    } else {
-      print("into signaling when creating answer");
-      //When creating createAnswer()
-      var roomInfoChannel = HtmlWebSocketChannel.connect(
-          Uri.parse('ws://$serverHost:8765/room_info'));
-      roomInfoChannel.sink.add(this.roomCode);
-      roomInfoChannel.stream.listen((event) {
-        print("got offer sdp");
-        setRemoteDescription(event.toString(), true);
-        // roomInfoChannel.sink.close();
-      });
-    }
-  }
+// class InitializeCreatorWebRTC {
 
-  _createPeerConnection() async {
-    Map<String, dynamic> configuration = {
-      "iceServers": [
-        {"url": "stun:stun.l.google.com:19302"},
-        // {"url": "stun:stun1.l.google.com:19302"},
-        // {"url": "stun:stun2.l.google.com:19302"},
-        // {"url": "stun:stun3.l.google.com:19302"},
-        // {"url": "stun:stun4.l.google.com:19302"},
-      ]
-    };
+//   bool _offer = false;
+//   RTCPeerConnection _peerConnection;
+//   MediaStream _localStream;
+//   RTCVideoRenderer _localRenderer = new RTCVideoRenderer();
+//   RTCVideoRenderer _remoteRenderer = new RTCVideoRenderer();
 
-    final Map<String, dynamic> offerSdpConstraints = {
-      "mandatory": {
-        "OfferToReceiveAudio": true,
-        "OfferToReceiveVideo": true,
-      },
-      "optional": [],
-    };
-    RTCPeerConnection pc =
-        await createPeerConnection(configuration, offerSdpConstraints);
-    pc.onIceCandidate = (event) {
-      if (event.candidate != null) {
-        print("candidate added");
-        candidates.add(
-          json.encode(
-            {
-              'candidate': event.candidate.toString(),
-              'sdpMid': event.sdpMid.toString(),
-              'sdpMlineIndex': event.sdpMlineIndex
-            },
-          ),
-        );
-      }
-    };
-    pc.onIceConnectionState = (event) {
-      print("on Ice Connection state -----> $event");
-    };
+//   final sdpController = TextEditingController();
 
-    pc.onSignalingState = (RTCSignalingState event) {
-      print("on signaling state ---> $event");
-      if (event == RTCSignalingState.RTCSignalingStateHaveLocalOffer) {
-        print("----------- when state have local offer -------------");
-        print(this.roomCode);
-        
-        var answerChannel = new HtmlWebSocketChannel.connect(
-            Uri.parse('ws://$serverHost:8765/answer/' + this.roomCode));
-        answerChannel.sink.add("hello world");
-        answerChannel.stream.listen((message) {
-          print("Oh just got the answer!!");
-          // setRemoteDescription(message.toString(), false);
-        });
-      } else if (event == RTCSignalingState.RTCSignalingStateHaveRemoteOffer) {
-        createAnswer();
-      } else if (event ==
-          RTCSignalingState.RTCSignalingStateHaveLocalPrAnswer) {
-             print("----------- when state have local answer -------------");
-        var candidateChannel = HtmlWebSocketChannel.connect(
-            Uri.parse('ws://$serverHost:8765/send_candidate/' + this.roomCode));
-        candidateChannel.stream.listen((message) {
-          print("Oh just got the candidate!!");
-          var decryptedCandidate = decrypt(message);
-          var allCandidates = json.decode(decryptedCandidate);
-          allCandidates.forEach((sessionCandidate) async {
-            dynamic session = await jsonDecode(sessionCandidate);
-            print(session['candidate']);
-            dynamic candidate = new RTCIceCandidate(session['candidate'],
-                session['sdpMid'], session['sdpMlineIndex']);
-            await _peerConnection.addCandidate(candidate);
-          });
+//   @override
+//   dispose() {
+//     _localRenderer.dispose();
+//     _remoteRenderer.dispose();
+//     sdpController.dispose();
+//     super.dispose();
+//   }
 
-          String allOfferCandidates = encrypt(json.encode(this.candidates));
-          var senderChannel = HtmlWebSocketChannel.connect(Uri.parse(
-              'ws://$serverHost:8765/set_candidate/' + this.roomCode));
-          senderChannel.sink.add(allOfferCandidates);
-          senderChannel.sink.close();
-        });
-      } else if (event ==
-          RTCSignalingState.RTCSignalingStateHaveRemotePrAnswer) {
-        String allCandidates = encrypt(json.encode(this.candidates));
-        var senderChannel = HtmlWebSocketChannel.connect(
-            Uri.parse('ws://$serverHost:8765/send_candidate/' + this.roomCode));
-        senderChannel.sink.add(allCandidates);
-        senderChannel.sink.close();
+//   @override
+//   void initState() {
+//     initRenderers();
+//     _createPeerConnection().then((pc) {
+//       _peerConnection = pc;
+//     });
+//     super.initState();
+//   }
 
-        var candidateChannel = HtmlWebSocketChannel.connect(
-            Uri.parse('ws://$serverHost:8765/set_candidate/' + this.roomCode));
-        candidateChannel.stream.listen((message) {
-          print("Oh just got the candidate!!");
-          var decryptedCandidate = decrypt(message);
-          var allCandidates = json.decode(decryptedCandidate);
-          allCandidates.forEach((sessionCandidate) async {
-            dynamic session = await jsonDecode(sessionCandidate);
-            print(session['candidate']);
-            dynamic candidate = new RTCIceCandidate(session['candidate'],
-                session['sdpMid'], session['sdpMlineIndex']);
-            await _peerConnection.addCandidate(candidate);
-          });
-        });
-      }
-    };
+//   initRenderers() async {
+//     await _localRenderer.initialize();
+//     await _remoteRenderer.initialize();
+//   }
 
-    pc.onAddStream = (stream) {
-      print("addStream: " + stream.id);
-      _remoteRenderer.srcObject = stream;
-    };
+//   void _createOffer() async {
+//     RTCSessionDescription description =
+//         await _peerConnection.createOffer({'offerToReceiveVideo': 1});
+//     var session = parse(description.sdp);
+//     print(json.encode(session));
+//     _offer = true;
 
-    return pc;
-  }
+//     // print(json.encode({
+//     //       'sdp': description.sdp.toString(),
+//     //       'type': description.type.toString(),
+//     //     }));
 
-  createOffer() async {
-    print(
-        "------------------step1  create an offer ---------------------------------------");
-    RTCSessionDescription description = await _peerConnection.createOffer(
-      {'offerToReceiveVideo': 1, 'offerToReceiveAudio': 1},
-    );
-    var session = parse(description.sdp);
-    _peerConnection.setLocalDescription(description);
-    String offer = encrypt(json.encode(session));
-    String data = json.encode({"room_code": this.roomCode, "offer": offer});
-    var channel = HtmlWebSocketChannel.connect(
-        Uri.parse('ws://$serverHost:8765/create_room'));
-    channel.sink.add(data);
-  }
+//     _peerConnection.setLocalDescription(description);
+//   }
 
-  void createAnswer() async {
-    print("--------creating answer----------");
-    RTCSessionDescription description = await _peerConnection.createAnswer(
-      {'offerToReceiveVideo': 1, 'offerToReceiveAudio': 1},
-    );
-    var session = parse(description.sdp);
-    var answer = encrypt(json.encode(session));
-    _peerConnection.setLocalDescription(description);
-    var channel = HtmlWebSocketChannel.connect(
-        Uri.parse('ws://$serverHost:8765/answer/' + this.roomCode));
-    channel.sink.add(answer);
-    // channel.sink.close();
-  }
+//   void _createAnswer() async {
+//     RTCSessionDescription description =
+//         await _peerConnection.createAnswer({'offerToReceiveVideo': 1});
 
-  void setRemoteDescription(String remoteSession, bool isOffer) async {
-    var decryptedString = decrypt(remoteSession);
-    dynamic session = await jsonDecode(decryptedString);
-    String sdp = write(session, null);
-    RTCSessionDescription description =
-        new RTCSessionDescription(sdp, isOffer ? 'offer' : 'answer');
-    print("remote description");
-    _peerConnection.setRemoteDescription(description);
-  }
+//     var session = parse(description.sdp);
+//     print(json.encode(session));
+//     // print(json.encode({
+//     //       'sdp': description.sdp.toString(),
+//     //       'type': description.type.toString(),
+//     //     }));
 
-  initialConnection(bool isProducer) async {
-    _peerConnection = await _createPeerConnection();
-    turnOnCamera();
-    if (isProducer) {
-      createOffer();
-    }
-  }
+//     _peerConnection.setLocalDescription(description);
+//   }
 
-  void turnOnCamera() async {
-    _localStream = await getUserMedia();
-    _peerConnection.addStream(_localStream);
-  }
+//   void _setRemoteDescription() async {
+//     String jsonString = sdpController.text;
+//     dynamic session = await jsonDecode('$jsonString');
 
-  void turnOffCamera() {
-    _localStream.getVideoTracks().forEach((element) {
-      element.stop();
-    });
-  }
+//     String sdp = write(session, null);
 
-  void toggleMic(bool value) {
-    if (_localStream != null) {
-      _localStream.getAudioTracks()[0].enabled = value ? true : false;
-    }
-  }
+//     // RTCSessionDescription description =
+//     //     new RTCSessionDescription(session['sdp'], session['type']);
+//     RTCSessionDescription description =
+//         new RTCSessionDescription(sdp, _offer ? 'answer' : 'offer');
+//     print(description.toMap());
 
-  void closeAllConnection() {
-    _peerConnection.close();
-    _localStream.getTracks().forEach((element) {
-      element.stop();
-    });
-  }
+//     await _peerConnection.setRemoteDescription(description);
+//   }
 
-  getUserMedia() async {
-    final Map<String, dynamic> mediaConstraints = {
-      'audio': true,
-      'video': {
-        'facingMode': 'user',
-      }
-    };
+//   void _addCandidate() async {
+//     String jsonString = sdpController.text;
+//     dynamic session = await jsonDecode('$jsonString');
+//     print(session['candidate']);
+//     dynamic candidate =
+//         new RTCIceCandidate(session['candidate'], session['sdpMid'], session['sdpMlineIndex']);
+//     await _peerConnection.addCandidate(candidate);
+//   }
 
-    MediaStream stream =
-        await navigator.mediaDevices.getUserMedia(mediaConstraints);
-    _localRenderer.srcObject = stream;
-    // _localRenderer.mirror = true;
-    return stream;
-  }
+//   _createPeerConnection() async {
+//     Map<String, dynamic> configuration = {
+//       "iceServers": [
+//         {"url": "stun:stun.l.google.com:19302"},
+//       ]
+//     };
 
-  encrypt(String rtcString) {
-    return base64.encode(GZipEncoder().encode(utf8.encode(rtcString)));
-  }
+//     final Map<String, dynamic> offerSdpConstraints = {
+//       "mandatory": {
+//         "OfferToReceiveAudio": true,
+//         "OfferToReceiveVideo": true,
+//       },
+//       "optional": [],
+//     };
 
-  decrypt(String rtcString) {
-    return utf8.decode(GZipDecoder().decodeBytes(base64.decode(rtcString)));
-  }
-}
+//     _localStream = await _getUserMedia();
+
+//     RTCPeerConnection pc = await createPeerConnection(configuration, offerSdpConstraints);
+//     // if (pc != null) print(pc);
+//     pc.addStream(_localStream);
+
+//     pc.onIceCandidate = (e) {
+//       if (e.candidate != null) {
+//         print(json.encode({
+//           'candidate': e.candidate.toString(),
+//           'sdpMid': e.sdpMid.toString(),
+//           'sdpMlineIndex': e.sdpMlineIndex,
+//         }));
+//       }
+//     };
+
+//     pc.onIceConnectionState = (e) {
+//       print(e);
+//     };
+
+//     pc.onAddStream = (stream) {
+//       print('addStream: ' + stream.id);
+//       _remoteRenderer.srcObject = stream;
+//     };
+
+//     return pc;
+//   }
+
+//   _getUserMedia() async {
+//     final Map<String, dynamic> mediaConstraints = {
+//       'audio': false,
+//       'video': {
+//         'facingMode': 'user',
+//       },
+//     };
+
+//     MediaStream stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+
+//     // _localStream = stream;
+//     _localRenderer.srcObject = stream;
+
+//     // _peerConnection.addStream(stream);
+
+//     return stream;
+//   }
+
+//   SizedBox videoRenderers() => SizedBox(
+//       height: 210,
+//       child: Row(children: [
+//         Flexible(
+//           child: new Container(
+//             key: new Key("local"),
+//             margin: new EdgeInsets.fromLTRB(5.0, 5.0, 5.0, 5.0),
+//             decoration: new BoxDecoration(color: Colors.black),
+//             child: new RTCVideoView(_localRenderer)
+//           ),
+//         ),
+//         Flexible(
+//           child: new Container(
+//               key: new Key("remote"),
+//               margin: new EdgeInsets.fromLTRB(5.0, 5.0, 5.0, 5.0),
+//               decoration: new BoxDecoration(color: Colors.black),
+//               child: new RTCVideoView(_remoteRenderer)),
+//         )
+//       ]));
+
+//   Row offerAndAnswerButtons() =>
+//       Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: <Widget>[
+//         new RaisedButton(
+//           // onPressed: () {
+//           //   return showDialog(
+//           //       context: context,
+//           //       builder: (context) {
+//           //         return AlertDialog(
+//           //           content: Text(sdpController.text),
+//           //         );
+//           //       });
+//           // },
+//           onPressed: _createOffer,
+//           child: Text('Offer'),
+//           color: Colors.amber,
+//         ),
+//         RaisedButton(
+//           onPressed: _createAnswer,
+//           child: Text('Answer'),
+//           color: Colors.amber,
+//         ),
+//       ]);
+
+//   Row sdpCandidateButtons() =>
+//       Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: <Widget>[
+//         RaisedButton(
+//           onPressed: _setRemoteDescription,
+//           child: Text('Set Remote Desc'),
+//           color: Colors.amber,
+//         ),
+//         RaisedButton(
+//           onPressed: _addCandidate,
+//           child: Text('Add Candidate'),
+//           color: Colors.amber,
+//         )
+//       ]);
+
+//   Padding sdpCandidatesTF() => Padding(
+//         padding: const EdgeInsets.all(16.0),
+//         child: TextField(
+//           controller: sdpController,
+//           keyboardType: TextInputType.multiline,
+//           maxLines: 4,
+//           maxLength: TextField.noMaxLength,
+//         ),
+//       );
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//         appBar: AppBar(
+//           title: Text(widget.title),
+//         ),
+//         body: Container(
+//             child: Column(children: [
+//           videoRenderers(),
+//           offerAndAnswerButtons(),
+//           sdpCandidatesTF(),
+//           sdpCandidateButtons(),
+//         ])));
+//   }
+// }
