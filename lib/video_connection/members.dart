@@ -122,32 +122,32 @@ class InitializeMemberWebRTC {
             "stun:stun3.l.google.com:19302",
             "stun:stun4.l.google.com:19302"
           ]
-        },
-        {
-          "url": 'turn:numb.viagenie.ca',
-          "credential": 'muazkh',
-          "username": 'webrtc@live.com'
-        },
-        {
-          "url": 'turn:192.158.29.39:3478?transport=udp',
-          "credential": 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
-          "username": '28224511:1379330808'
-        },
-        {
-          "url": 'turn:192.158.29.39:3478?transport=tcp',
-          "credential": 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
-          "username": '28224511:1379330808'
-        },
-        {
-          "url": 'turn:turn.bistri.com:80',
-          "credential": 'homeo',
-          "username": 'homeo'
-        },
-        {
-          "url": 'turn:turn.anyfirewall.com:443?transport=tcp',
-          "credential": 'webrtc',
-          "username": 'webrtc'
         }
+        // {
+        //   "url": 'turn:numb.viagenie.ca',
+        //   "credential": 'muazkh',
+        //   "username": 'webrtc@live.com'
+        // },
+        // {
+        //   "url": 'turn:192.158.29.39:3478?transport=udp',
+        //   "credential": 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+        //   "username": '28224511:1379330808'
+        // },
+        // {
+        //   "url": 'turn:192.158.29.39:3478?transport=tcp',
+        //   "credential": 'JZEOEt2V3Qb0y27GRntt2u2PAYA=',
+        //   "username": '28224511:1379330808'
+        // },
+        // {
+        //   "url": 'turn:turn.bistri.com:80',
+        //   "credential": 'homeo',
+        //   "username": 'homeo'
+        // },
+        // {
+        //   "url": 'turn:turn.anyfirewall.com:443?transport=tcp',
+        //   "credential": 'webrtc',
+        //   "username": 'webrtc'
+        // }
       ]
     };
 
@@ -188,19 +188,27 @@ class InitializeMemberWebRTC {
       }
     };
 
+    pc.onAddStream = (stream) {
+      print('addStream: ' + stream.id);
+      _remoteRenderer.srcObject = stream;
+    };
+
     pc.onAddTrack = (MediaStream stream, MediaStreamTrack track) {
-      track.onUnMute = (){
-        _remoteRenderer.srcObject = stream;
+      print("-----------stream is added --------------");
+      _remoteRenderer.srcObject = stream;
       _remoteRenderer.srcObject.addTrack(track);
-      };
+    };
+
+    pc.onTrack = (RTCTrackEvent event) {
+      print("track is there ----------");
     };
 
     return pc;
   }
 
   addCandidates(String message) {
-    var decryptedCandidate = decrypt(message);
-    var allCandidates = json.decode(decryptedCandidate);
+    // var decryptedCandidate = decrypt(message);
+    var allCandidates = json.decode(message);
     allCandidates.forEach((sessionCandidate) {
       dynamic session = jsonDecode(sessionCandidate);
       print(session['candidate']);
@@ -208,9 +216,8 @@ class InitializeMemberWebRTC {
           session['candidate'], session['sdpMid'], session['sdpMlineIndex']);
       _peerConnection.addCandidate(candidate);
     });
-    dynamic lastCandidate = new RTCIceCandidate("", "", 0);
-    _peerConnection.addCandidate(lastCandidate);
-    String allAnswerCandidates = encrypt(json.encode(this.candidates));
+    // String allAnswerCandidates = encrypt(json.encode(this.candidates));
+    String allAnswerCandidates = json.encode(this.candidates);
     publish("send_to_creator/$roomCode", allAnswerCandidates);
   }
 
@@ -221,7 +228,8 @@ class InitializeMemberWebRTC {
     );
     var session = parse(description.sdp);
     _peerConnection.setLocalDescription(description);
-    String offer = encrypt(json.encode(session));
+    // String offer = encrypt(json.encode(session));
+    String offer = json.encode(session);
     publish("create_room/$roomCode", offer, true);
   }
 
@@ -231,15 +239,16 @@ class InitializeMemberWebRTC {
       {'offerToReceiveVideo': 1, 'offerToReceiveAudio': 1},
     );
     var session = parse(description.sdp);
-    var answer = encrypt(json.encode(session));
+    // var answer = encrypt(json.encode(session));
+    var answer = json.encode(session);
     _peerConnection.setLocalDescription(description);
     publish("answer/$roomCode", answer);
   }
 
   void setRemoteDescription(String remoteSession) async {
     print("--------setting remote description----------");
-    var decryptedString = decrypt(remoteSession);
-    dynamic session = await jsonDecode(decryptedString);
+    // var decryptedString = decrypt(remoteSession);
+    dynamic session = await json.decode(remoteSession);
     String sdp = write(session, null);
     RTCSessionDescription description = new RTCSessionDescription(sdp, 'offer');
     _peerConnection.setRemoteDescription(description);
@@ -293,11 +302,11 @@ class InitializeMemberWebRTC {
     return stream;
   }
 
-  encrypt(String rtcString) {
-    return base64.encode(GZipEncoder().encode(utf8.encode(rtcString)));
-  }
+  // encrypt(String rtcString) {
+  //   return base64.encode(GZipEncoder().encode(utf8.encode(rtcString)));
+  // }
 
-  decrypt(String rtcString) {
-    return utf8.decode(GZipDecoder().decodeBytes(base64.decode(rtcString)));
-  }
+  // decrypt(String rtcString) {
+  //   return utf8.decode(GZipDecoder().decodeBytes(base64.decode(rtcString)));
+  // }
 }

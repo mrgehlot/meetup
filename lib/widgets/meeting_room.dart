@@ -92,9 +92,13 @@ class _MeetingRoomState extends State<MeetingRoom> {
                       scrollDirection: Axis.vertical,
                       children: [
                         Container(
-                          color: Colors.pink,
+                          color: Colors.blue,
                           height: 200,
-                          child: RTCVideoView(_remoteRenderer),
+                          child: RTCVideoView(
+                            _remoteRenderer,
+                            objectFit: RTCVideoViewObjectFit
+                                .RTCVideoViewObjectFitCover,
+                          ),
                         ),
                       ],
                     ),
