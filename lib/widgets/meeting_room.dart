@@ -94,10 +94,14 @@ class _MeetingRoomState extends State<MeetingRoom> {
                         Container(
                           color: Colors.blue,
                           height: 200,
-                          child: RTCVideoView(
-                            _remoteRenderer,
-                            objectFit: RTCVideoViewObjectFit
-                                .RTCVideoViewObjectFitCover,
+                          child: Transform(
+                            transform: Matrix4.identity()..rotateY(-pi),
+                            alignment: FractionalOffset.center,
+                            child: RTCVideoView(
+                              _remoteRenderer,
+                              objectFit: RTCVideoViewObjectFit
+                                  .RTCVideoViewObjectFitCover,
+                            ),
                           ),
                         ),
                       ],
