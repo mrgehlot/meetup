@@ -25,6 +25,8 @@ class InitializeMemberWebRTC {
   initRenderers() async {
     await _localRenderer.initialize();
     await _remoteRenderer.initialize();
+    _peerConnection = await _createPeerConnection();
+    return 0;
   }
 
   String generateRandomClientID() {
@@ -207,6 +209,8 @@ class InitializeMemberWebRTC {
     };
 
     pc.addStream(localStream);
+    _localRenderer.srcObject = localStream;
+
     return pc;
   }
 
@@ -256,14 +260,6 @@ class InitializeMemberWebRTC {
     String sdp = write(session, null);
     RTCSessionDescription description = new RTCSessionDescription(sdp, 'offer');
     _peerConnection.setRemoteDescription(description);
-  }
-
-  initialConnection(bool isProducer) async {
-    _peerConnection = await _createPeerConnection();
-    turnOnCamera();
-    if (isProducer) {
-      createOffer();
-    }
   }
 
   void turnOnCamera() async {

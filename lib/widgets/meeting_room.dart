@@ -46,11 +46,10 @@ class _MeetingRoomState extends State<MeetingRoom> {
             _localRenderer, _remoteRenderer, tempRoomCode)
         : new InitializeMemberWebRTC(
             _localRenderer, _remoteRenderer, tempRoomCode);
-    initializeWebRTC.initializeMQTTClient().then((value) {
-      if (value) {
-        initializeWebRTC.initialConnection(isProducer);
-        initializeWebRTC.initRenderers();
-      }
+    initializeWebRTC.initRenderers().then((value) {
+      initializeWebRTC.initializeMQTTClient().then((value) {
+        if (isProducer) initializeWebRTC.createOffer();
+      });
     });
     if (isProducer) {
       setState(() {

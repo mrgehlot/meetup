@@ -25,6 +25,8 @@ class InitializeCreatorWebRTC {
   initRenderers() async {
     await _localRenderer.initialize();
     await _remoteRenderer.initialize();
+    _peerConnection = await _createPeerConnection();
+    return 0;
   }
 
   String generateRandomClientID() {
@@ -207,6 +209,7 @@ class InitializeCreatorWebRTC {
     };
 
     pc.addStream(localStream);
+    _localRenderer.srcObject = localStream;
 
     return pc;
   }
@@ -250,14 +253,6 @@ class InitializeCreatorWebRTC {
       String allOfferCandidates = json.encode(this.candidates);
       publish("send_to_member/$roomCode", allOfferCandidates);
     });
-  }
-
-  initialConnection(bool isProducer) async {
-    _peerConnection = await _createPeerConnection();
-    turnOnCamera();
-    if (isProducer) {
-      createOffer();
-    }
   }
 
   void turnOnCamera() async {
